@@ -1,0 +1,166 @@
+.\venv\Scripts\alembic.exe 
+: Traceback (most recent 
+call last):
+At line:1 char:1
++ 
+.\venv\Scripts\alembic.exe 
+upgrade head 2>&1 | 
+Out-String | Set-Conte ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo         
+     : NotSpecified: (Tra  
+  ceback (most recent ca   
+ ll last)::String) [],     
+RemoteException
+    + FullyQualifiedErrorI 
+   d : NativeCommandError
+ 
+  File "<frozen runpy>", 
+line 198, in 
+_run_module_as_main
+  File "<frozen runpy>", 
+line 88, in _run_code
+  File "C:\Users\harsh\.gem
+ini\antigravity\scratch\SQL
+_QUERY_AGENT\backend\venv\S
+cripts\alembic.exe\__main__
+.py", line 6, in <module>
+    sys.exit(main())
+             ~~~~^^
+  File "C:\Users\harsh\.gem
+ini\antigravity\scratch\SQL
+_QUERY_AGENT\backend\venv\L
+ib\site-packages\alembic\co
+nfig.py", line 1047, in 
+main
+    CommandLine(prog=prog).
+main(argv=argv)
+    ~~~~~~~~~~~~~~~~~~~~~~~
+~~~~^^^^^^^^^^^
+  File "C:\Users\harsh\.gem
+ini\antigravity\scratch\SQL
+_QUERY_AGENT\backend\venv\L
+ib\site-packages\alembic\co
+nfig.py", line 1037, in 
+main
+    self.run_cmd(cfg, 
+options)
+    
+~~~~~~~~~~~~^^^^^^^^^^^^^^
+  File "C:\Users\harsh\.gem
+ini\antigravity\scratch\SQL
+_QUERY_AGENT\backend\venv\L
+ib\site-packages\alembic\co
+nfig.py", line 971, in 
+run_cmd
+    fn(
+    ~~^
+        config,
+        ^^^^^^^
+        *[getattr(options, 
+k, None) for k in 
+positional],
+        ^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^
+        **{k: 
+getattr(options, k, None) 
+for k in kwarg},
+        ^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^
+    )
+    ^
+  File "C:\Users\harsh\.gem
+ini\antigravity\scratch\SQL
+_QUERY_AGENT\backend\venv\L
+ib\site-packages\alembic\co
+mmand.py", line 463, in 
+upgrade
+    script = ScriptDirector
+y.from_config(config)
+  File "C:\Users\harsh\.gem
+ini\antigravity\scratch\SQL
+_QUERY_AGENT\backend\venv\L
+ib\site-packages\alembic\sc
+ript\base.py", line 175, 
+in from_config
+    tsl = config.get_alembi
+c_option("truncate_slug_len
+gth")
+  File "C:\Users\harsh\.gem
+ini\antigravity\scratch\SQL
+_QUERY_AGENT\backend\venv\L
+ib\site-packages\alembic\co
+nfig.py", line 472, in 
+get_alembic_option
+    return self._get_toml_c
+onfig_value(name, 
+default=default)
+           ~~~~~~~~~~~~~~~~
+~~~~~~~~~~~^^^^^^^^^^^^^^^^
+^^^^^^^
+  File "C:\Users\harsh\.gem
+ini\antigravity\scratch\SQL
+_QUERY_AGENT\backend\venv\L
+ib\site-packages\alembic\co
+nfig.py", line 494, in 
+_get_toml_config_value
+    self.toml_alembic_confi
+g.get(name, USE_DEFAULT)
+    
+^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\harsh\.gem
+ini\antigravity\scratch\SQL
+_QUERY_AGENT\backend\venv\L
+ib\site-packages\sqlalchemy
+\util\langhelpers.py", 
+line 1123, in __get__
+    obj.__dict__[self.__nam
+e__] = result = 
+self.fget(obj)
+                           
+                
+~~~~~~~~~^^^^^
+  File "C:\Users\harsh\.gem
+ini\antigravity\scratch\SQL
+_QUERY_AGENT\backend\venv\L
+ib\site-packages\alembic\co
+nfig.py", line 278, in 
+toml_alembic_config
+    toml_data = 
+compat.tomllib.load(f)
+  File "C:\Python313\Lib\to
+mllib\_parser.py", line 
+66, in load
+    return loads(s, 
+parse_float=parse_float)
+  File "C:\Python313\Lib\to
+mllib\_parser.py", line 
+102, in loads
+    pos = 
+key_value_rule(src, pos, 
+out, header, parse_float)
+  File "C:\Python313\Lib\to
+mllib\_parser.py", line 
+326, in key_value_rule
+    pos, key, value = 
+parse_key_value_pair(src, 
+pos, parse_float)
+                      ~~~~~
+~~~~~~~~~~~~~~~^^^^^^^^^^^^
+^^^^^^^^^^^
+  File "C:\Python313\Lib\to
+mllib\_parser.py", line 
+366, in 
+parse_key_value_pair
+    raise 
+suffixed_err(src, pos, 
+"Expected '=' after a key 
+in a key/value pair")
+tomllib.TOMLDecodeError: 
+Expected '=' after a key 
+in a key/value pair (at 
+line 1, column 8)
+

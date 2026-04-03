@@ -1,20 +1,20 @@
-import { useState, useEffect, useContext } from "react";
+import { useState, useEffect } from "react";
 import { toast } from "react-toastify";
 import { queryAPI, historyAPI } from "../services/api";
-import hljs from "highlight.js";
-import { AuthContext } from "../context/AuthContext";
 import "highlight.js/styles/github.css";
 import SchemaVisualization from "./SchemaVisualization";
 import Table from "./Table";
+
+const emptyResponse = () => ({
+  result: null,
+  sql: "",
+  explanation: "",
+  error: "",
+});
+
 function Dashboard() {
-  const { isAuthenticated } = useContext(AuthContext);
   const [question, setQuestion] = useState("");
-  const [response, setResponse] = useState({
-    result: null,
-    sql: "",
-    explanation: "",
-    error: "",
-  });
+  const [response, setResponse] = useState(emptyResponse);
   const [schema, setSchema] = useState(null);
   const [loading, setLoading] = useState(false);
   const [history, setHistory] = useState([]);
@@ -29,13 +29,17 @@ function Dashboard() {
   }, []);
 
   const fetchSchema = async (connstr = null) => {
+    setSchemaLoading(true);
     try {
       const schema_response = await queryAPI.getSchema(connstr);
       setSchema(schema_response.data);
     } catch (err) {
       console.error("Failed to fetch schema", err);
+    } finally {
+      setSchemaLoading(false);
     }
   };
+
   const loadHistory = async () => {
     try {
       const res = await historyAPI.getHistory({ limit: 50 });
@@ -51,16 +55,16 @@ function Dashboard() {
 
     setLoading(true);
     setError("");
-    setResponse(null);
+    setResponse(emptyResponse());
 
     try {
       const connStr = connectionMode === "custom" ? connectionString : null;
       const res = await queryAPI.askQuestion(question, connStr);
       setResponse(res.data);
       if (connectionMode === "custom") {
-        fetchSchema(connStr); // Refresh schema if custom connection was used
+        fetchSchema(connStr);
       }
-      loadHistory(); // Refresh history
+      loadHistory();
     } catch (err) {
       if (err.response?.status === 401) {
         setError("Session expired. Please log in again.");
@@ -80,7 +84,7 @@ function Dashboard() {
   const handleConnectionChange = (mode) => {
     setConnectionMode(mode);
     const connStr = mode === "custom" ? connectionString : null;
-    loadSchema(connStr);
+    fetchSchema(connStr);
   };
 
   const handleConnectionStringChange = (e) => {
@@ -89,7 +93,7 @@ function Dashboard() {
 
   const handleConnectionStringBlur = () => {
     if (connectionMode === "custom" && connectionString.trim()) {
-      loadSchema(connectionString);
+      fetchSchema(connectionString);
     }
   };
 
@@ -97,7 +101,7 @@ function Dashboard() {
     localStorage.removeItem("token");
     setTimeout(() => {
       window.location.href = "/login";
-    },1000)
+    }, 1000);
     toast.success("Logged out successfully");
   };
 
@@ -109,10 +113,16 @@ function Dashboard() {
       console.error("Failed to toggle bookmark", err);
     }
   };
+
+  const hasQueryOutput =
+    response &&
+    (response.sql ||
+      response.explanation ||
+      response.result != null ||
+      (response.error && response.error.trim()));
+
   return (
-    <div>
     <div className="flex h-screen bg-gray-100">
-      {/* Sidebar - History */}
       <div className="w-80 bg-white border-r border-gray-200 flex flex-col">
         <div className="p-4 border-b border-gray-200">
           <h2 className="text-lg font-semibold text-gray-800">Query History</h2>
@@ -129,7 +139,8 @@ function Dashboard() {
                   result: item.execution_result
                     ? JSON.parse(item.execution_result)
                     : null,
-                  error: item.error_message,
+                  explanation: "",
+                  error: item.error_message || "",
                 });
               }}
             >
@@ -163,8 +174,7 @@ function Dashboard() {
         </div>
       </div>
 
-      {/* Main Content */}
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 flex flex-col min-w-0">
         <div className="bg-white border-b border-gray-200 p-4">
           <div className="flex items-center justify-between">
             <div>
@@ -184,8 +194,7 @@ function Dashboard() {
           </div>
         </div>
 
-        <div className="flex-1 flex">
-          {/* Query Section */}
+        <div className="flex-1 flex min-h-0">
           <div className="flex-1 p-8 overflow-y-auto">
             <div className="max-w-4xl mx-auto">
               <div className="mb-6 p-4 bg-white rounded-lg shadow border border-gray-200">
@@ -251,72 +260,73 @@ function Dashboard() {
                   </button>
                 </div>
               </form>
-              {/* Query Explanation */}
-              <div className="bg-white p-6 rounded-lg shadow overflow-hidden">
-                <h3 className="text-lg font-semibold mb-4 text-gray-800">
-                  Explanation
-                </h3>
 
-                <code
-                  className="block bg-gray-100 p-4 rounded mb-2 overflow-x-auto text-sm text-gray-800"
-                  dangerouslySetInnerHTML={{
-                    __html: response?.explanation
-                      ? response.explanation
-                      : '<span class="text-gray-500">No explanation available</span>',
-                  }}
-                />
-              </div>
-
-              {/* Error */}
-              {response?.error?.trim() ? (
-                <div className="bg-red-50 p-6 rounded-lg border border-red-200">
-                  <h3 className="text-lg font-semibold mb-2 text-red-800">
-                    Error
-                  </h3>
-                  <p className="text-red-600">{response.error}</p>
-                </div>
-              ) : null}
-
-              {/* Schema Warning */}
               {!schema?.tables?.length ? (
-                <div className="px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200 mb-6">
                   <p className="text-yellow-800 text-sm">
                     ⚠️ No schema loaded. The database might be empty or the
                     connection failed. Check the right panel.
                   </p>
                 </div>
               ) : null}
+
+              {hasQueryOutput ? (
+                <div className="space-y-6">
+                  <div className="bg-white p-6 rounded-lg shadow overflow-hidden">
+                    <h3 className="text-lg font-semibold mb-4 text-gray-800">
+                      Explanation
+                    </h3>
+                    <code
+                      className="block bg-gray-100 p-4 rounded mb-2 overflow-x-auto text-sm text-gray-800"
+                      dangerouslySetInnerHTML={{
+                        __html: response.explanation
+                          ? response.explanation
+                          : '<span class="text-gray-500">No explanation available</span>',
+                      }}
+                    />
+                  </div>
+
+                  {!response?.error?.trim() ? (
+                    <Table response={response} />
+                  ) : null}
+
+                  {response?.error?.trim() ? (
+                    <div className="bg-red-50 p-6 rounded-lg border border-red-200">
+                      <h3 className="text-lg font-semibold mb-2 text-red-800">
+                        Error
+                      </h3>
+                      <p className="text-red-600">{response.error}</p>
+                    </div>
+                  ) : null}
+                </div>
+              ) : null}
+
+              {error ? (
+                <div className="bg-red-50 p-4 rounded-lg border border-red-200 mt-4">
+                  <p className="text-red-600 text-sm">{error}</p>
+                </div>
+              ) : null}
             </div>
-             
-          </div>
-        </div>
-      </div>
-      {/* Schema Visualization Panel */}
-        
-        <div className="bg-gray-50 border-l border-gray-200 p-6 overflow-y-auto flex flex-col w-96">
-          <div className="mb-4">
-            <h2 className="text-lg font-semibold text-gray-800">
-              📊 Database Schema
-            </h2>
-            <p className="text-sm text-gray-500">
-              {schemaLoading
-                ? "Loading schema..."
-                : "Visual representation of your database tables and relationships"}
-            </p>
           </div>
 
-          <div className="flex-1 overflow-hidden">
-            <SchemaVisualization schema={schemaLoading ? null : schema} />
+          <div className="bg-gray-50 border-l border-gray-200 p-6 overflow-y-auto flex flex-col w-96 shrink-0">
+            <div className="mb-4">
+              <h2 className="text-lg font-semibold text-gray-800">
+                📊 Database Schema
+              </h2>
+              <p className="text-sm text-gray-500">
+                {schemaLoading
+                  ? "Loading schema..."
+                  : "Visual representation of your database tables and relationships"}
+              </p>
+            </div>
+            <div className="flex-1 overflow-hidden min-h-0">
+              <SchemaVisualization schema={schemaLoading ? null : schema} />
+            </div>
           </div>
         </div>
-    
-    </div>
-     {/* Query Result */}
-    
-        <div className="bg-gray-50 border-l border-gray-200 p-6 overflow-y-auto flex flex-col m-20">
-        <Table response={response} />
-        </div>
       </div>
+    </div>
   );
 }
 

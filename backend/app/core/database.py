@@ -3,13 +3,16 @@ from sqlalchemy.orm import declarative_base
 from app.core.config import settings
 
 # Engine/session for App DB (auth, profiles, query history)
-app_engine = create_async_engine(
-    settings.APP_DATABASE_URL,
-    echo=False,
-    pool_pre_ping=True,
-    pool_size=10,
-    max_overflow=20
-)
+app_engine_args = {
+    "echo": False,
+    "pool_pre_ping": True,
+}
+if "sqlite" not in settings.APP_DATABASE_URL:
+    app_engine_args["pool_size"] = 10
+    app_engine_args["max_overflow"] = 20
+
+app_engine = create_async_engine(settings.APP_DATABASE_URL, **app_engine_args)
+
 AppSessionLocal = async_sessionmaker(
     app_engine,
     class_=AsyncSession,
@@ -41,12 +44,14 @@ async def get_target_db_session(connection_string: str = None) -> AsyncSession:
     if target_url.startswith("mysql://") or target_url.startswith("mysql+pymysql://"):
         target_url = target_url.replace("mysql://", "mysql+aiomysql://").replace("mysql+pymysql://", "mysql+aiomysql://")
         
-    engine = create_async_engine(
-        target_url,
-        echo=False,
-        pool_pre_ping=True,
-        pool_recycle=3600
-    )
+    engine_args = {
+        "echo": False,
+        "pool_pre_ping": True,
+    }
+    if "sqlite" not in target_url:
+        engine_args["pool_recycle"] = 3600
+        
+    engine = create_async_engine(target_url, **engine_args)
     TargetSessionLocal = async_sessionmaker(
         engine,
         class_=AsyncSession,

@@ -1,0 +1,68 @@
+============================= test session starts =============================
+platform win32 -- Python 3.13.7, pytest-9.0.2, pluggy-1.6.0 -- C:\Users\harsh\.gemini\antigravity\scratch\SQL_QUERY_AGENT\backend\venv\Scripts\python.exe
+cachedir: .pytest_cache
+rootdir: C:\Users\harsh\.gemini\antigravity\scratch\SQL_QUERY_AGENT\backend
+configfile: pytest.ini
+plugins: anyio-4.13.0, asyncio-1.3.0
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 9 items / 1 error
+
+=================================== ERRORS ====================================
+___________________ ERROR collecting tests/test_security.py ___________________
+tests\test_security.py:9: in <module>
+    from app.core.security import (
+app\core\security.py:11: in <module>
+    from app.core.database import get_app_db
+app\core\database.py:6: in <module>
+    app_engine = create_async_engine(
+venv\Lib\site-packages\sqlalchemy\ext\asyncio\engine.py:120: in create_async_engine
+    sync_engine = _create_engine(url, **kw)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^
+<string>:2: in create_engine
+    ???
+venv\Lib\site-packages\sqlalchemy\util\deprecations.py:281: in warned
+    return fn(*args, **kwargs)  # type: ignore[no-any-return]
+           ^^^^^^^^^^^^^^^^^^^
+venv\Lib\site-packages\sqlalchemy\engine\create.py:721: in create_engine
+    raise TypeError(
+E   TypeError: Invalid argument(s) 'pool_size','max_overflow' sent to create_engine(), using configuration SQLiteDialect_aiosqlite/StaticPool/Engine.  Please check that the keyword arguments are appropriate for this combination of components.
+============================== warnings summary ===============================
+app\core\config.py:5
+  C:\Users\harsh\.gemini\antigravity\scratch\SQL_QUERY_AGENT\backend\tests\..\app\core\config.py:5: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.12/migration/
+    class Settings(BaseSettings):
+
+app\schemas\user.py:23
+  C:\Users\harsh\.gemini\antigravity\scratch\SQL_QUERY_AGENT\backend\tests\..\app\schemas\user.py:23: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.12/migration/
+    class UserResponse(UserBase):
+
+app\schemas\user.py:52
+  C:\Users\harsh\.gemini\antigravity\scratch\SQL_QUERY_AGENT\backend\tests\..\app\schemas\user.py:52: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.12/migration/
+    class QueryHistoryResponse(QueryHistoryBase):
+
+app\main.py:28
+  C:\Users\harsh\.gemini\antigravity\scratch\SQL_QUERY_AGENT\backend\tests\..\app\main.py:28: DeprecationWarning: 
+          on_event is deprecated, use lifespan event handlers instead.
+  
+          Read more about it in the
+          [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+          
+    @app.on_event("startup")
+
+venv\Lib\site-packages\fastapi\applications.py:4598
+  C:\Users\harsh\.gemini\antigravity\scratch\SQL_QUERY_AGENT\backend\venv\Lib\site-packages\fastapi\applications.py:4598: DeprecationWarning: 
+          on_event is deprecated, use lifespan event handlers instead.
+  
+          Read more about it in the
+          [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+          
+    return self.router.on_event(event_type)  # ty: ignore[deprecated]
+
+app\core\config.py:5
+  C:\Users\harsh\.gemini\antigravity\scratch\SQL_QUERY_AGENT\backend\app\core\config.py:5: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.12/migration/
+    class Settings(BaseSettings):
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+ERROR tests/test_security.py - TypeError: Invalid argument(s) 'pool_size','ma...
+!!!!!!!!!!!!!!!!!!! Interrupted: 1 error during collection !!!!!!!!!!!!!!!!!!!!
+======================== 6 warnings, 1 error in 1.41s =========================
