@@ -2,6 +2,9 @@
   "name": "sql-query-agent",
   "private": true,
   "scripts": {
+    "test:frontend": "npm --prefix frontend run test",
+    "build:frontend": "npm --prefix frontend run build",
+    "test:frontend:watch": "npm --prefix frontend run test:watch",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:headed": "playwright test --headed"

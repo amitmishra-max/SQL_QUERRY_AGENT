@@ -1,7 +1,6 @@
 /**
  * Component tests for Register.jsx (API via MSW).
  */
-import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
@@ -9,9 +8,7 @@ import { http, HttpResponse } from 'msw'
 import Register from '../pages/Register'
 import { server } from '../mocks/server'
 
-const { mockNavigate } = vi.hoisted(() => ({
-  mockNavigate: vi.fn(),
-}))
+const mockNavigate = vi.fn()
 
 vi.mock('react-router-dom', async (importOriginal) => {
   const actual = await importOriginal()
@@ -34,6 +31,17 @@ function renderRegister() {
 describe('Register Component', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    // Re-add default handlers for each test
+    server.use(
+      http.post(`${API}/api/auth/register`, () =>
+        HttpResponse.json({
+          id: 1,
+          email: 'registered@example.com',
+          full_name: 'Registered User',
+          is_active: true,
+        }),
+      ),
+    )
   })
 
   it('renders all form fields: name, email, password', () => {
@@ -97,6 +105,6 @@ describe('Register Component', () => {
     await user.click(screen.getByText('Sign up'))
     await waitFor(() => {
       expect(mockNavigate).toHaveBeenCalledWith('/login')
-    })
+    }, { timeout: 3000 })
   })
 })

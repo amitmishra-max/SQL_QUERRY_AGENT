@@ -1,7 +1,6 @@
 /**
  * Component tests for SchemaVisualization.jsx (React Flow schema graph).
  */
-import { describe, it, expect } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import SchemaVisualization from '../pages/SchemaVisualization'
 

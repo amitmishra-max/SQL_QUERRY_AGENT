@@ -2,6 +2,8 @@ from pydantic import BaseModel, EmailStr, Field
 from typing import Optional, List
 from datetime import datetime
 
+from app.core.config import settings
+
 
 # User Schemas
 class UserBase(BaseModel):
@@ -23,7 +25,7 @@ class UserLogin(BaseModel):
 class UserResponse(UserBase):
     id: int
     is_active: bool
-    created_at: datetime
+    created_at: Optional[datetime] = None
 
     class Config:
         from_attributes = True
@@ -56,7 +58,7 @@ class QueryHistoryResponse(QueryHistoryBase):
     execution_result: Optional[str]
     error_message: Optional[str]
     is_bookmarked: bool
-    created_at: datetime
+    created_at: Optional[datetime] = None
     explanation: Optional[str] = None
 
     class Config:
@@ -65,7 +67,7 @@ class QueryHistoryResponse(QueryHistoryBase):
 
 # Query Request/Response Schemas
 class QueryRequest(BaseModel):
-    question: str
+    question: str = Field(..., min_length=1, max_length=settings.MAX_QUESTION_LENGTH)
     connection_string: Optional[str] = None
 
 

@@ -1,11 +1,12 @@
 import { defineConfig, devices } from "@playwright/test";
 
 /**
- * E2E tests live in ./e2e. Starts real backend (SQLite) + Vite preview.
+ * E2E tests live in ./e2e. Starts real backend + Vite preview.
  * Mock LLM/schema/query via route interception in specs where noted.
  */
 export default defineConfig({
   testDir: "./e2e",
+  testMatch: "**/*.spec.ts",
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 1 : 0,
@@ -20,14 +21,16 @@ export default defineConfig({
   projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
   webServer: [
     {
-      command: "bash scripts/e2e-backend.sh",
+      command: process.platform === "win32" 
+        ? "powershell ../scripts/e2e-backend.ps1"
+        : "bash ../scripts/e2e-backend.sh",
       url: "http://127.0.0.1:8000/health",
       timeout: 120_000,
       reuseExistingServer: !process.env.CI,
     },
     {
       command:
-        "cd frontend && npx vite build && npx vite preview --host 127.0.0.1 --port 4173",
+        "npx vite build && npx vite preview --host 127.0.0.1 --port 4173",
       url: "http://127.0.0.1:4173",
       timeout: 180_000,
       reuseExistingServer: !process.env.CI,

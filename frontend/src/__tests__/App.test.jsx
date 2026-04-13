@@ -2,9 +2,6 @@
  * Integration tests for App.jsx route guards.
  * Covers: unauthenticated redirect, authenticated access, route protection.
  */
-import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { render, screen } from '@testing-library/react'
-import App from '../App'
 
 // Mock the page components to simplify route testing
 vi.mock('../pages/Login', () => ({
@@ -17,60 +14,47 @@ vi.mock('../pages/Dashboard', () => ({
   default: () => <div data-testid="dashboard-page">Dashboard Page</div>,
 }))
 
-// Mock react-toastify 
+// Mock react-toastify
 vi.mock('react-toastify', () => ({
   ToastContainer: () => null,
   toast: { success: vi.fn(), error: vi.fn() },
 }))
+
+import { render, screen, waitFor } from '@testing-library/react'
+import App from '../App'
+
+function TestWrapper() {
+  return <App />
+}
 
 describe('App Route Guards', () => {
   beforeEach(() => {
     localStorage.clear()
   })
 
-  it('unauthenticated user sees login page at root', () => {
-    // Arrange — no token
+  it('unauthenticated user sees login page at root', async () => {
     window.history.pushState({}, '', '/')
-
-    // Act
-    render(<App />)
-
-    // Assert — should redirect to login
-    expect(screen.getByTestId('login-page')).toBeTruthy()
+    render(<TestWrapper />)
+    await waitFor(() => expect(screen.getByTestId('login-page')).toBeTruthy())
   })
 
-  it('authenticated user sees dashboard at root', () => {
-    // Arrange
-    localStorage.setItem('token', 'valid-token')
+  it('authenticated user sees dashboard at root', async () => {
+    localStorage.setItem('token', 'test-token')
     window.history.pushState({}, '', '/')
-
-    // Act
-    render(<App />)
-
-    // Assert
-    expect(screen.getByTestId('dashboard-page')).toBeTruthy()
+    render(<TestWrapper />)
+    await waitFor(() => expect(screen.getByTestId('dashboard-page')).toBeTruthy())
   })
 
-  it('authenticated user is redirected from /login to dashboard', () => {
-    // Arrange
-    localStorage.setItem('token', 'valid-token')
+  it('authenticated user is redirected from /login to dashboard', async () => {
+    localStorage.setItem('token', 'test-token')
     window.history.pushState({}, '', '/login')
-
-    // Act
-    render(<App />)
-
-    // Assert
-    expect(screen.getByTestId('dashboard-page')).toBeTruthy()
+    render(<TestWrapper />)
+    await waitFor(() => expect(screen.getByTestId('dashboard-page')).toBeTruthy())
   })
 
-  it('unauthenticated user is redirected from /dashboard to login', () => {
-    // Arrange — no token
+  it('unauthenticated user is redirected from /dashboard to login', async () => {
     window.history.pushState({}, '', '/dashboard')
-
-    // Act
-    render(<App />)
-
-    // Assert
-    expect(screen.getByTestId('login-page')).toBeTruthy()
+    render(<TestWrapper />)
+    await waitFor(() => expect(screen.getByTestId('login-page')).toBeTruthy())
   })
 })

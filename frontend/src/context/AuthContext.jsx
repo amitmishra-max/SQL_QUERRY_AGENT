@@ -1,4 +1,5 @@
 import { createContext, useState, useEffect, useCallback } from 'react'
+import { authAPI } from '../services/api'
 
 export const AuthContext = createContext()
 
@@ -7,10 +8,33 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    // Check for token on mount
+    let ignore = false
     const token = localStorage.getItem('token')
-    setIsAuthenticated(!!token)
-    setLoading(false)
+    if (!token) {
+      setIsAuthenticated(false)
+      setLoading(false)
+      return () => { ignore = true }
+    }
+
+    authAPI.getMe()
+      .then(() => {
+        if (!ignore && localStorage.getItem('token') === token) {
+          setIsAuthenticated(true)
+        }
+      })
+      .catch(() => {
+        if (!ignore && localStorage.getItem('token') === token) {
+          localStorage.removeItem('token')
+          setIsAuthenticated(false)
+        }
+      })
+      .finally(() => {
+        if (!ignore) {
+          setLoading(false)
+        }
+      })
+
+    return () => { ignore = true }
   }, [])
 
   const login = useCallback((token) => {

@@ -2,22 +2,12 @@
  * Vitest setup file for frontend tests.
  * Configures jsdom environment, MSW, and cleanup.
  */
-import { cleanup } from '@testing-library/react'
-import { afterAll, afterEach, beforeAll, vi } from 'vitest'
 import { server } from '../mocks/server'
+import { afterAll, afterEach, beforeAll } from 'vitest'
 
-beforeAll(() => {
-  server.listen({ onUnhandledRequest: 'warn' })
-})
-
-afterEach(() => {
-  server.resetHandlers()
-  cleanup()
-})
-
-afterAll(() => {
-  server.close()
-})
+beforeAll(() => server.listen({ onUnhandledRequest: 'warn' }))
+afterEach(() => server.resetHandlers())
+afterAll(() => server.close())
 
 // React Flow (and some layout libs) expect ResizeObserver in the browser
 global.ResizeObserver = class ResizeObserver {
@@ -28,16 +18,18 @@ global.ResizeObserver = class ResizeObserver {
 
 global.matchMedia =
   global.matchMedia ||
-  vi.fn().mockImplementation((query) => ({
-    matches: false,
-    media: query,
-    onchange: null,
-    addListener: vi.fn(),
-    removeListener: vi.fn(),
-    addEventListener: vi.fn(),
-    removeEventListener: vi.fn(),
-    dispatchEvent: vi.fn(),
-  }))
+  function (query) {
+    return {
+      matches: false,
+      media: query,
+      onchange: null,
+      addListener: () => {},
+      removeListener: () => {},
+      addEventListener: () => {},
+      removeEventListener: () => {},
+      dispatchEvent: () => {},
+    }
+  }
 
 // Mock localStorage for all tests
 const localStorageMock = (() => {

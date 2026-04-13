@@ -1,4 +1,3 @@
-import { describe, it, expect } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import Table from '../pages/Table'
 
@@ -31,10 +30,10 @@ describe('Table Component', () => {
   })
 
   it('handles duplicate column names by renaming', () => {
-    // Duplicate columns scenario:
-    const response = [
-      { name: 'Alice', name: 'AliceAgain' }
-    ]
+    const response = {
+      result: [{ name: 'Alice', name_2: 'AliceAgain' }],
+      columns: ['name', 'name'],
+    }
 
     render(<Table response={response} />)
 

@@ -2,8 +2,7 @@
  * Tests for AuthContext.
  * Covers: initial state with/without token, login(), logout().
  */
-import { describe, it, expect, beforeEach } from 'vitest'
-import { render, screen, act } from '@testing-library/react'
+import { render, screen, act, waitFor } from '@testing-library/react'
 import { useContext } from 'react'
 import { AuthContext, AuthProvider } from '../context/AuthContext'
 
@@ -37,7 +36,7 @@ describe('AuthContext', () => {
     expect(screen.getByTestId('auth').textContent).toBe('no')
   })
 
-  it('initial state is authenticated when token exists in localStorage', () => {
+  it('initial state is authenticated when token exists in localStorage', async () => {
     // Arrange
     localStorage.setItem('token', 'existing-token')
 
@@ -49,7 +48,9 @@ describe('AuthContext', () => {
     )
 
     // Assert
-    expect(screen.getByTestId('auth').textContent).toBe('yes')
+    await waitFor(() => {
+      expect(screen.getByTestId('auth').textContent).toBe('yes')
+    })
   })
 
   it('login sets token in localStorage and updates authenticated state', async () => {

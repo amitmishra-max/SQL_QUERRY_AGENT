@@ -1,4 +1,4 @@
-import { useState } from 'react'
+﻿import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { authAPI } from '../services/api'
 
@@ -30,7 +30,7 @@ function Register() {
     {
       key: 'fullName',
       type: 'text',
-      placeholder: 'Full name',
+      placeholder: 'Full Name',
       value: fullName,
       onChange: (e) => setFullName(e.target.value),
       label: 'Full Name',
@@ -43,7 +43,7 @@ function Register() {
     {
       key: 'email',
       type: 'email',
-      placeholder: 'you@example.com',
+      placeholder: 'Email address',
       value: email,
       onChange: (e) => setEmail(e.target.value),
       label: 'Email Address',
@@ -56,7 +56,7 @@ function Register() {
     {
       key: 'password',
       type: showPassword ? 'text' : 'password',
-      placeholder: '••••••••',
+      placeholder: 'Password',
       value: password,
       onChange: (e) => setPassword(e.target.value),
       label: 'Password',
@@ -115,7 +115,7 @@ function Register() {
           <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[500px] h-[220px] bg-blue-700/10 rounded-full blur-3xl" />
         </div>
 
-        {/* Card — compact, no overflow */}
+        {/* Card â€” compact, no overflow */}
         <div className="relative w-full max-w-sm fade-up">
           <div className="bg-[#0e1624] border-2 border-slate-700 rounded-2xl shadow-2xl shadow-black/70 overflow-hidden">
 
@@ -178,7 +178,7 @@ function Register() {
                   </div>
                 ))}
 
-                {/* Password hint — takes no extra space unless needed */}
+                {/* Password hint â€” takes no extra space unless needed */}
                 <div className="h-4 flex items-center">
                   {password.length > 0 && password.length < 8 && (
                     <div className="flex items-center gap-1.5 pl-0.5">
@@ -202,11 +202,11 @@ function Register() {
                       <svg className="animate-spin" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
                         <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
                       </svg>
-                      Creating account…
+                      Creating account...
                     </>
                   ) : (
                     <>
-                      Create account
+                      Sign up
                       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                         <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
                       </svg>
@@ -218,7 +218,7 @@ function Register() {
               {/* Divider */}
               <div className="flex items-center gap-3 my-4">
                 <div className="flex-1 h-px bg-slate-700" />
-                <span className="text-slate-500 text-xs font-medium">already a member?</span>
+                <span className="text-slate-500 text-xs font-medium">Already have an account?</span>
                 <div className="flex-1 h-px bg-slate-700" />
               </div>
 
@@ -227,7 +227,7 @@ function Register() {
                 to="/login"
                 className="flex items-center justify-center w-full py-2.5 px-4 border-2 border-slate-600 hover:border-slate-500 hover:bg-slate-800/40 rounded-lg text-slate-300 hover:text-white text-sm font-semibold transition-all"
               >
-                Sign in to your account
+                Sign in
               </Link>
 
             </div>
@@ -245,3 +245,4 @@ function Register() {
 }
 
 export default Register
+

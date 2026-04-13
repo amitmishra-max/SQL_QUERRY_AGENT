@@ -58,12 +58,14 @@ test.describe("Dashboard (mocked LLM + schema)", () => {
     await page.getByRole("button", { name: "Sign in" }).click();
     await expect(page).toHaveURL(/\/dashboard$/);
 
-    await expect(page.getByRole("heading", { name: /Database Schema/ })).toBeVisible();
+    await expect(page.getByText("Database Schema")).toBeVisible();
 
     await page.getByPlaceholder(/Ask a question/).fill("How many rows?");
     await page.getByRole("button", { name: "Ask" }).click();
 
-    await expect(page.getByText("Results (1 rows)")).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByText("Results (1 row)")).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByRole("cell", { name: "1" })).toBeVisible();
+    await page.getByRole("button", { name: "Explanation" }).click();
     await expect(page.getByText("E2E mock explanation")).toBeVisible();
   });
 });

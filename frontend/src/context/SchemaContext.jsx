@@ -1,6 +1,13 @@
-import { createContext, useContext, useState } from "react";
+﻿import { createContext, useContext, useState } from "react";
 
-const SchemaContext = createContext();
+const defaultSchemaContext = {
+  schema: null,
+  setSchema: () => {},
+  isDark: true,
+  setIsDark: () => {},
+};
+
+const SchemaContext = createContext(defaultSchemaContext);
 
 export function SchemaProvider({ children }) {
   const [schema, setSchema] = useState(null);
@@ -14,5 +21,6 @@ export function SchemaProvider({ children }) {
 }
 
 export function useSchema() {
-  return useContext(SchemaContext);
+  return useContext(SchemaContext) || defaultSchemaContext;
 }
+

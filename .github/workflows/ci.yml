@@ -1,28 +1,22 @@
-# Continuous integration — runs on every push and pull request to the default branch.
-# Industry practice: fast feedback, no deploy on red tests.
+# Simple CI Pipeline
 name: CI
 
 on:
   push:
-    branches: [main, master]
+    branches: [main, master, testing, develop]
   pull_request:
-    branches: [main, master]
-  workflow_dispatch:
+    branches: [main, master, testing, develop]
 
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  backend-test:
+  backend:
     name: Backend (pytest)
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: backend
-
     steps:
-      - name: Checkout
+      - name: Checkout code
         uses: actions/checkout@v4
 
       - name: Set up Python
@@ -30,70 +24,49 @@ jobs:
         with:
           python-version: "3.12"
           cache: pip
-          cache-dependency-path: |
-            backend/requirements.txt
-            backend/requirements-dev.txt
+          cache-dependency-path: backend/requirements*.txt
 
       - name: Install dependencies
+        working-directory: backend
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt -r requirements-dev.txt
 
       - name: Run tests
-        run: pytest tests/ -q --tb=short
-
-  frontend-test-and-build:
-    name: Frontend (vitest + build)
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: frontend
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: "20"
-          cache: npm
-          cache-dependency-path: frontend/package-lock.json
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Run unit tests
-        run: npm run test
-
-      - name: Production build
-        run: npm run build
+        working-directory: backend
+        run: pytest tests/ -v --tb=short
 
   e2e:
     name: E2E (Playwright)
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: sql_query_agent_test
+        options: >-
+          --health-cmd="mysqladmin ping"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=3
+        ports:
+          - 3306:3306
+
     steps:
-      - name: Checkout
+      - name: Checkout code
         uses: actions/checkout@v4
 
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-          cache: pip
-          cache-dependency-path: |
-            backend/requirements.txt
-            backend/requirements-dev.txt
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: "20"
           cache: npm
-          cache-dependency-path: |
-            frontend/package-lock.json
-            package-lock.json
 
       - name: Install backend dependencies
         working-directory: backend
@@ -105,13 +78,62 @@ jobs:
         working-directory: frontend
         run: npm ci
 
-      - name: Install root dev dependencies (Playwright)
-        run: npm ci
-
-      - name: Install Playwright Chromium
+      - name: Install Playwright browsers
+        working-directory: frontend
         run: npx playwright install chromium --with-deps
 
-      - name: Run Playwright tests
-        run: npx playwright test
+      - name: Wait for MySQL
+        run: |
+          until mysqladmin ping -h 127.0.0.1 -u root -proot --silent; do
+            echo 'Waiting for MySQL...'
+            sleep 2
+          done
+
+      - name: Setup environment file
+        working-directory: backend
+        run: |
+          cp .env.example .env
+          sed -i 's|APP_DATABASE_URL=.*|APP_DATABASE_URL=mysql+aiomysql://root:root@127.0.0.1:3306/sql_query_agent_test|' .env
+          sed -i 's|DEFAULT_TARGET_DB_URL=.*|DEFAULT_TARGET_DB_URL=mysql+aiomysql://root:root@127.0.0.1:3306/sql_query_agent_test|' .env
+          sed -i 's|SECRET_KEY=.*|SECRET_KEY=e2e-secret-key-for-ci|' .env
+          sed -i 's|LLAMA_BASE_URL=.*|LLAMA_BASE_URL=http://127.0.0.1:11434|' .env
+
+      - name: Run database migrations
+        working-directory: backend
+        run: alembic upgrade head
+
+      - name: Run E2E tests
+        working-directory: frontend
+        run: >
+          npx playwright test
+          e2e/auth-journey.spec.ts
+          e2e/dashboard-query.spec.ts
+          e2e/error-flow.spec.ts
         env:
           CI: true
+
+  frontend:
+    name: Frontend (vitest + build)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Run unit tests
+        working-directory: frontend
+        run: npm run test -- --reporter=verbose
+
+      - name: Build production bundle
+        working-directory: frontend
+        run: npm run build

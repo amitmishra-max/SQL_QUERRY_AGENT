@@ -1,4 +1,4 @@
-import { useState, useContext } from 'react'
+﻿import { useState, useContext } from 'react'
 import { toast } from 'react-toastify'
 import { useNavigate, Link } from 'react-router-dom'
 import { authAPI } from '../services/api'
@@ -11,7 +11,7 @@ const truncatePassword = (password) => {
   return new TextDecoder().decode(encoded.slice(0, 72))
 }
 
-/* ── Icons ─────────────────────────────────────────────────────────────────── */
+/* â”€â”€ Icons â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 const Icon = {
   Logo: () => (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="white">
@@ -130,7 +130,7 @@ function Login() {
 
       <div className="h-screen w-screen overflow-hidden bg-[#080d18] flex">
 
-        {/* ── Left branding panel — scrolls internally if screen is short ── */}
+        {/* â”€â”€ Left branding panel â€” scrolls internally if screen is short â”€â”€ */}
         <div
           className="left-panel hidden lg:flex flex-col w-[420px] flex-shrink-0 overflow-y-auto overflow-x-hidden relative"
           style={{ background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 40%, #7c3aed 100%)' }}
@@ -169,7 +169,7 @@ function Login() {
                 Build smarter<br />SQL workflows
               </h1>
               <p className="text-blue-100/65 text-sm leading-relaxed mb-9">
-                Generate, optimize and execute SQL with AI precision — in seconds.
+                Generate, optimize and execute SQL with AI precision â€” in seconds.
               </p>
               <div className="space-y-4">
                 {features.map(({ icon, label, desc }) => (
@@ -189,7 +189,7 @@ function Login() {
         {/* Footer */}
             <footer className="border-t border-white/10 bg-white/5 backdrop-blur-sm -mx-10 -mb-10 px-10 py-4 rounded-b-none">
               <div className="flex items-center justify-between text-[11px] text-white/50">
-                <p>© {new Date().getFullYear()} SQL Agent. All rights reserved.</p>
+                <p>Â© {new Date().getFullYear()} SQL Agent. All rights reserved.</p>
                 <div className="flex items-center gap-4">
                   <a href="#" className="hover:text-white/90 transition-colors">Privacy</a>
                   <a href="#" className="hover:text-white/90 transition-colors">Terms</a>
@@ -201,7 +201,7 @@ function Login() {
           </div>
         </div>
 
-        {/* ── Right form panel ────────────────────────────────────────────── */}
+        {/* â”€â”€ Right form panel â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
         <div className="flex-1 flex items-center justify-center px-4 bg-[#080d18] relative overflow-hidden">
 
           {/* Subtle top glow */}
@@ -255,7 +255,7 @@ function Login() {
                       <input
                         type="email"
                         required
-                        placeholder="you@example.com"
+                        placeholder="Email address"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         onFocus={() => setFocusedField('email')}
@@ -284,7 +284,7 @@ function Login() {
                       <input
                         type={showPassword ? 'text' : 'password'}
                         required
-                        placeholder="••••••••"
+                        placeholder="Password"
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         onFocus={() => setFocusedField('password')}
@@ -310,7 +310,7 @@ function Login() {
                     className="w-full flex items-center justify-center gap-2 py-2.5 px-4 mt-1 bg-blue-600 hover:bg-blue-500 active:bg-blue-700 disabled:bg-slate-700 disabled:text-slate-500 disabled:cursor-not-allowed text-white text-sm font-bold rounded-lg transition-all shadow-lg shadow-blue-900/30 tracking-wide"
                   >
                     {loading ? (
-                      <><Icon.Spinner /> Signing in…</>
+                      <><Icon.Spinner /> Signing in...</>
                     ) : (
                       <>Sign in <Icon.Arrow /></>
                     )}
@@ -320,7 +320,7 @@ function Login() {
                 {/* Divider */}
                 <div className="flex items-center gap-3 my-4">
                   <div className="flex-1 h-px bg-slate-700" />
-                  <span className="text-slate-500 text-xs font-medium">new here?</span>
+                  <span className="text-slate-500 text-xs font-medium">Don't have an account?</span>
                   <div className="flex-1 h-px bg-slate-700" />
                 </div>
 
@@ -329,7 +329,7 @@ function Login() {
                   to="/register"
                   className="flex items-center justify-center w-full py-2.5 px-4 border-2 border-slate-600 hover:border-slate-500 hover:bg-slate-800/40 rounded-lg text-slate-300 hover:text-white text-sm font-semibold transition-all"
                 >
-                  Create an account
+                  Register
                 </Link>
 
               </div>
@@ -348,3 +348,4 @@ function Login() {
 }
 
 export default Login
+

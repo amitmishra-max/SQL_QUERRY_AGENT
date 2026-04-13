@@ -1,3 +1,4 @@
+from sqlalchemy import inspect, text
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
 from sqlalchemy.orm import declarative_base
 from app.core.config import settings
@@ -41,8 +42,10 @@ async def get_target_db_session(connection_string: str = None) -> AsyncSession:
     target_url = connection_string or settings.DEFAULT_TARGET_DB_URL
     
     # Ensure async driver
-    if target_url.startswith("mysql://") or target_url.startswith("mysql+pymysql://"):
-        target_url = target_url.replace("mysql://", "mysql+aiomysql://").replace("mysql+pymysql://", "mysql+aiomysql://")
+    if target_url.startswith("mysql+pymysql://"):
+        target_url = target_url.replace("mysql+pymysql://", "mysql+aiomysql://", 1)
+    elif target_url.startswith("mysql://"):
+        target_url = target_url.replace("mysql://", "mysql+aiomysql://", 1)
         
     engine_args = {
         "echo": False,
@@ -62,6 +65,22 @@ async def get_target_db_session(connection_string: str = None) -> AsyncSession:
     
     return TargetSessionLocal(), engine
 
+def _ensure_mysql_schema_updates(sync_conn):
+    inspector = inspect(sync_conn)
+    if inspector.has_table("users"):
+        columns = [col["name"] for col in inspector.get_columns("users")]
+        if "role" not in columns:
+            if sync_conn.dialect.name == "mysql":
+                sync_conn.execute(text("ALTER TABLE users ADD COLUMN role ENUM('admin','user','viewer') NOT NULL DEFAULT 'user'"))
+            else:
+                sync_conn.execute(text("ALTER TABLE users ADD COLUMN role VARCHAR(20) NOT NULL DEFAULT 'user'"))
+
+    if inspector.has_table("query_history"):
+        columns = [col["name"] for col in inspector.get_columns("query_history")]
+        if "explanation" not in columns:
+            sync_conn.execute(text("ALTER TABLE query_history ADD COLUMN explanation TEXT NULL"))
+
 async def init_db():
     async with app_engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+        await conn.run_sync(_ensure_mysql_schema_updates)

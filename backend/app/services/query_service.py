@@ -10,7 +10,8 @@ class QueryService:
     
     DANGEROUS_KEYWORDS = [
         "DROP", "DELETE", "TRUNCATE", "ALTER", "INSERT", "UPDATE", 
-        "CREATE", "GRANT", "REVOKE", "EXEC", "EXECUTE", "SHOW", "DESCRIBE"
+        "CREATE", "GRANT", "REVOKE", "EXEC", "EXECUTE", "SHOW", "DESCRIBE",
+        "UNION", "SLEEP", "BENCHMARK", "WAITFOR"
     ]
     
     @staticmethod
@@ -20,6 +21,7 @@ class QueryService:
         - Only SELECT queries allowed
         - No dangerous keywords
         - No multiple statements
+        - No tautology patterns (e.g., '1'='1')
         - Allows 1 trailing semicolon
         """
         original = query.strip()
@@ -46,6 +48,17 @@ class QueryService:
             pattern = rf"\b{keyword}\b"
             if re.search(pattern, upper):
                 return False, f"Query contains forbidden keyword: {keyword}"
+
+        # 4. Tautology pattern detection (e.g., '1'='1', "1"="1")
+        tautology_patterns = [
+            r"'1'\s*=\s*'1'",
+            r'"1"\s*=\s*"1"',
+            r"\b1\s*=\s*1\b",
+            r"''\s*OR\s*'",  # Empty string OR dangerous pattern
+        ]
+        for pattern in tautology_patterns:
+            if re.search(pattern, no_semicolon, re.IGNORECASE):
+                return False, "Query contains suspicious injection pattern (tautology)"
 
         return True, ""
     

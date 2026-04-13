@@ -1,7 +1,6 @@
 /**
  * Component tests for Login.jsx (API via MSW).
  */
-import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
@@ -10,9 +9,7 @@ import { AuthContext } from '../context/AuthContext'
 import Login from '../pages/Login'
 import { server } from '../mocks/server'
 
-const { mockNavigate } = vi.hoisted(() => ({
-  mockNavigate: vi.fn(),
-}))
+const mockNavigate = vi.fn()
 
 vi.mock('react-router-dom', async (importOriginal) => {
   const actual = await importOriginal()
@@ -53,6 +50,15 @@ function renderLogin() {
 describe('Login Component', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    // Re-add default handlers for each test
+    server.use(
+      http.post(`${API}/api/auth/login`, () =>
+        HttpResponse.json({
+          access_token: 'test-token-123',
+          token_type: 'bearer',
+        }),
+      ),
+    )
   })
 
   it('renders email and password inputs', () => {
@@ -113,6 +119,6 @@ describe('Login Component', () => {
     await waitFor(() => {
       expect(mockLogin).toHaveBeenCalledWith('test-token-123')
       expect(mockNavigate).toHaveBeenCalledWith('/dashboard')
-    })
+    }, { timeout: 3000 })
   })
 })

@@ -1,4 +1,4 @@
-from typing import List, Dict, Any
+from typing import Dict, Any
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -11,97 +11,141 @@ class SchemaService:
         """
         Get complete database schema including tables, columns, and relationships
         """
-        # Get all tables
-        tables_query = text("""
-            SELECT TABLE_NAME 
-            FROM INFORMATION_SCHEMA.TABLES 
-            WHERE TABLE_SCHEMA = :db_name 
-            AND TABLE_TYPE = 'BASE TABLE'
-            ORDER BY TABLE_NAME
-        """)
-        
-        result = await db.execute(tables_query, {"db_name": database_name})
-        tables = [row[0] for row in result.fetchall()]
-        
+        dialect_name = getattr(getattr(db.bind, "dialect", None), "name", "").lower()
         schema = {"tables": []}
-        
+
+        if dialect_name == "sqlite":
+            tables_query = text(
+                "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name"
+            )
+            result = await db.execute(tables_query)
+            tables = [row[0] for row in result.fetchall()]
+        else:
+            tables_query = text(
+                """
+                SELECT TABLE_NAME
+                FROM INFORMATION_SCHEMA.TABLES
+                WHERE TABLE_SCHEMA = :db_name
+                AND TABLE_TYPE = 'BASE TABLE'
+                ORDER BY TABLE_NAME
+                """
+            )
+            result = await db.execute(tables_query, {"db_name": database_name})
+            tables = [row[0] for row in result.fetchall()]
+
         for table_name in tables:
-            table_schema = await SchemaService._get_table_schema(db, database_name, table_name)
+            table_schema = await SchemaService._get_table_schema(db, dialect_name, database_name, table_name)
             schema["tables"].append(table_schema)
-        
+
         return schema
     
     @staticmethod
     async def _get_table_schema(
         db: AsyncSession, 
+        dialect_name: str,
         database_name: str, 
         table_name: str
     ) -> Dict[str, Any]:
         """Get schema for a single table"""
-        columns_query = text("""
-            SELECT 
-                COLUMN_NAME,
-                DATA_TYPE,
-                IS_NULLABLE,
-                COLUMN_KEY,
-                EXTRA
-            FROM INFORMATION_SCHEMA.COLUMNS 
-            WHERE TABLE_SCHEMA = :db_name 
-            AND TABLE_NAME = :table_name
-            ORDER BY ORDINAL_POSITION
-        """)
-        
-        result = await db.execute(
-            columns_query, 
-            {"db_name": database_name, "table_name": table_name}
-        )
-        
         columns = []
         primary_key = None
-        
-        for row in result.fetchall():
-            col_name, data_type, is_nullable, column_key, extra = row
-            columns.append({
-                "column_name": col_name,
-                "data_type": data_type,
-                "is_nullable": is_nullable,
-                "is_primary_key": column_key == "PRI",
-                "is_auto_increment": "auto_increment" in (extra or "").lower()
-            })
-            
-            if column_key == "PRI":
-                primary_key = col_name
-        
-        # Get foreign keys
-        fk_query = text("""
-            SELECT 
-                COLUMN_NAME,
-                REFERENCED_TABLE_NAME,
-                REFERENCED_COLUMN_NAME
-            FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE 
-            WHERE TABLE_SCHEMA = :db_name 
-            AND TABLE_NAME = :table_name
-            AND REFERENCED_TABLE_NAME IS NOT NULL
-        """)
-        
-        result = await db.execute(
-            fk_query, 
-            {"db_name": database_name, "table_name": table_name}
-        )
-        
-        foreign_keys = []
-        for row in result.fetchall():
-            foreign_keys.append({
-                "column": row[0],
-                "references_table": row[1],
-                "references_column": row[2]
-            })
-        
+
+        if dialect_name == "sqlite":
+            columns_query = text(f"PRAGMA table_info('{table_name}')")
+            result = await db.execute(columns_query)
+
+            for row in result.fetchall():
+                col_name = row[1]
+                data_type = row[2]
+                is_nullable = "YES" if row[3] == 0 else "NO"
+                is_primary = row[5] == 1
+
+                columns.append({
+                    "column_name": col_name,
+                    "data_type": data_type,
+                    "is_nullable": is_nullable,
+                    "is_primary_key": is_primary,
+                    "is_auto_increment": False,
+                })
+
+                if is_primary:
+                    primary_key = col_name
+
+            fk_query = text(f"PRAGMA foreign_key_list('{table_name}')")
+            result = await db.execute(fk_query)
+            foreign_keys = [
+                {
+                    "column": row[3],
+                    "references_table": row[2],
+                    "references_column": row[4],
+                }
+                for row in result.fetchall()
+            ]
+        else:
+            columns_query = text(
+                """
+                SELECT
+                    COLUMN_NAME,
+                    DATA_TYPE,
+                    IS_NULLABLE,
+                    COLUMN_KEY,
+                    EXTRA
+                FROM INFORMATION_SCHEMA.COLUMNS
+                WHERE TABLE_SCHEMA = :db_name
+                AND TABLE_NAME = :table_name
+                ORDER BY ORDINAL_POSITION
+                """
+            )
+            result = await db.execute(
+                columns_query,
+                {"db_name": database_name, "table_name": table_name}
+            )
+
+            for row in result.fetchall():
+                col_name, data_type, is_nullable, column_key, extra = row
+                is_primary_key = column_key == "PRI"
+
+                columns.append({
+                    "column_name": col_name,
+                    "data_type": data_type,
+                    "is_nullable": is_nullable,
+                    "is_primary_key": is_primary_key,
+                    "is_auto_increment": "auto_increment" in (extra or "").lower(),
+                })
+
+                if is_primary_key:
+                    primary_key = col_name
+
+            fk_query = text(
+                """
+                SELECT
+                    COLUMN_NAME,
+                    REFERENCED_TABLE_NAME,
+                    REFERENCED_COLUMN_NAME
+                FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE
+                WHERE TABLE_SCHEMA = :db_name
+                AND TABLE_NAME = :table_name
+                AND REFERENCED_TABLE_NAME IS NOT NULL
+                """
+            )
+            result = await db.execute(
+                fk_query,
+                {"db_name": database_name, "table_name": table_name}
+            )
+            foreign_keys = [
+                {
+                    "column": row[0],
+                    "references_table": row[1],
+                    "references_column": row[2],
+                }
+                for row in result.fetchall()
+            ]
+
         return {
             "table_name": table_name,
             "columns": columns,
             "primary_key": primary_key,
-            "foreign_keys": foreign_keys
+            "foreign_keys": foreign_keys,
         }
 
     @staticmethod

@@ -12,8 +12,8 @@
 CREATE DATABASE sql_agent_db;
 ```
 
-#### b. User Authentication Database (SQLite by default)
-No setup required for SQLite (default: `auth_db.sqlite3` in backend directory). You can change `AUTH_DATABASE_URL` in `app/core/config.py` to use another RDBMS if desired.
+#### b. User Authentication Database
+Set `APP_DATABASE_URL` in `backend/.env`. Use SQLite for local development or tests, and use your production database URL in deployed environments.
 
 ### 2. Backend Setup
 
@@ -34,9 +34,8 @@ pip install -r requirements.txt
 
 
 # Copy and edit environment file
-cp .env.example .env
-# Edit .env with your MySQL credentials and OpenAI API key
-# Optionally, set `AUTH_DATABASE_URL` for user profile storage (default is SQLite)
+cp ../.env.example .env
+# Edit .env with your database credentials, JWT secret, and LLM configuration.
 
 
 # Run migrations (for LLM/SQL DB only)
