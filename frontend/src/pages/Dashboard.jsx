@@ -5,6 +5,7 @@ import hljs from "highlight.js";
 import Table from "./Table";
 import SchemaVisualization from "./SchemaVisualization";
 import SchemaStatisticsCharts from "./SchemaStatisticsCharts";
+import Analysis from "./Analysis";
 import { Link, useInRouterContext } from "react-router-dom";
 import { useSchema } from "../context/SchemaContext";
 import AppLogo from "../components/AppLogo";

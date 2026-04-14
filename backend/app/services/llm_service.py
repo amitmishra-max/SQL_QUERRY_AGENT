@@ -2,7 +2,6 @@ import asyncio
 import httpx
 import json
 import re
-import asyncio
 from typing import Optional, List, Dict, Any
 
 from app.core.config import settings
@@ -26,11 +25,14 @@ class LLMService:
             if model.strip()
         ]
         
+        # Gemini model configuration
+        self.gemini_model = settings.GEMINI_MODEL
+        
         # Initialize Google client only if API key is valid
         self.google_client = None
-        if settings.GOOGLE_API_KEY and settings.GOOGLE_API_KEY != "your-google-api-key":
+        if settings.GEMINI_API_KEY and settings.GEMINI_API_KEY != "your-google-api-key":
             try:
-                self.google_client = Client(api_key=settings.GOOGLE_API_KEY)
+                self.google_client = Client(api_key=settings.GEMINI_API_KEY)
             except Exception as e:
                 print(f"[LLMService] Failed to initialize Google client: {e}")
 
@@ -141,9 +143,12 @@ class LLMService:
                 "trends": []
             }
 
-        data_json = self._prepare_data_for_llm(results)
-        prompt = self._build_analysis_prompt(question, data_json)
-
+        # FIX 1: _prepare_data_for_llm now returns (data_json, meta) tuple
+        # so we can inject row count info into the prompt separately,
+        # instead of wrapping data in a metadata dict that confuses the LLM.
+        data_json, row_meta = self._prepare_data_for_llm(results)
+        prompt = self._build_analysis_prompt(question, data_json, row_meta)
+        
         # --- PRIMARY: Ollama/Llama ---
         try:
             raw = await self._call_llm(prompt)
@@ -229,21 +234,50 @@ class LLMService:
         if self.google_client is None:
             raise Exception("Google GenAI fallback is not configured")
 
-        selected_model = model or self.google_model
-        response = self.google_client.models.generate_content(
-            model=selected_model,
-            contents=prompt,
-            config=GenerateContentConfig(
-                temperature=0,
-                top_p=0.9
-            )
-        )
+        selected_model = model or self.gemini_model or self.google_model
+        max_retries = 3
+        base_delay = 1
 
-        raw_text = response.text
-        if not raw_text:
-            raise Exception("Empty response from Google GenAI")
+        for attempt in range(max_retries):
+            try:
+                response = self.google_client.models.generate_content(
+                    model=selected_model,
+                    contents=prompt,
+                    config=GenerateContentConfig(
+                        temperature=0,
+                        top_p=0.9
+                    )
+                )
 
-        return raw_text
+                raw_text = response.text
+                if not raw_text:
+                    raise Exception("Empty response from Google GenAI")
+
+                return raw_text
+            except Exception as e:
+                error_str = str(e)
+
+                # Fail-fast on quota exhaustion.
+                if "429" in error_str or "RESOURCE_EXHAUSTED" in error_str:
+                    raise Exception(
+                        "Gemini API quota exceeded. Free tier: 20 requests/day. "
+                        "Please upgrade to a paid plan or try again later. "
+                        "See: https://ai.google.dev/gemini-api/docs/rate-limits"
+                    )
+
+                # Retry on temporary unavailability.
+                if "503" in error_str or "UNAVAILABLE" in error_str:
+                    if attempt < max_retries - 1:
+                        delay = base_delay * (2 ** attempt)
+                        print(
+                            f"[LLMService] Gemini temporarily unavailable "
+                            f"(attempt {attempt + 1}/{max_retries}). Retrying in {delay}s..."
+                        )
+                        await asyncio.sleep(delay)
+                        continue
+                    raise Exception(f"Gemini service unavailable after {max_retries} retries")
+
+                raise
 
     # ------------------------------------------------
     # SHARED: PARSE JSON (for SQL generation)
@@ -327,59 +361,78 @@ Respond ONLY with a valid JSON object. No markdown, no extra text:
     # ------------------------------------------------
     # SHARED: BUILD ANALYSIS PROMPT
     # ------------------------------------------------
-    def _build_analysis_prompt(self, user_query: str, data_json: str) -> str:
-        return f"""
-SYSTEM: You are a meticulous Senior Data Analyst. Your goal is to provide a factual, evidence-based analysis of the provided dataset.
+    def _build_analysis_prompt(self, user_query: str, data_json: str, row_meta: Dict[str, Any]) -> str:
+        # FIX 2: Row context is injected as plain text, NOT wrapped around the data.
+        # This prevents the LLM from seeing a "data" key with a truncated string value.
+        truncation_note = (
+            f"Note: The full result set has {row_meta['total_rows']} rows. "
+            f"You are analyzing the first {row_meta['rows_analyzed']} rows as a representative sample."
+            if row_meta["truncated"]
+            else f"This is the complete dataset with {row_meta['total_rows']} rows."
+        )
 
-CONTEXT:
-User Question: {user_query}
-Dataset (JSON Format): {data_json}
+        return f"""SYSTEM: You are a meticulous Senior Data Analyst. Provide a factual, evidence-based analysis using ONLY the data provided below.
 
+USER QUESTION: {user_query}
 
-1. INSTRUCTIONS:
-- You are looking at a SAMPLE of the query results (up to 50 rows).
-- Treat this sample as representative.
-- Provide insights based ONLY on the rows provided. 
-- If you see an employee with a salary > 50,000 in these 20 rows, report it.
-- DO NOT complain about truncated data; simply analyze the available rows..
-2. ANALYSIS DEPTH: 
-   - 'summary': Directly answer the user's question using specific metrics (sums, averages, or counts) found in the data.
-   - 'insights': Identify correlations or specific high/low performing segments.
-   - 'anomalies': Look for outliers, null values, or unexpected zero-values.
-   - 'trends': Identify patterns (e.g., chronological growth, frequent categories).
+{truncation_note}
+
+DATASET (JSON array of records):
+{data_json}
+
+INSTRUCTIONS:
+- Analyze ALL records in the dataset above. Do not skip any rows.
+- Every numeric claim (counts, sums, averages, min/max) must be derived directly from the data rows above.
+- If the user asks about salaries, scan every record's "salary" field explicitly.
+- Do not mention truncation, missing data, or data quality issues unless a field is literally null or zero in the rows provided.
+
+ANALYSIS DEPTH:
+- "summary": Directly answer the user's question with specific metrics (exact counts, sums, or averages from the data).
+- "insights": Identify correlations, top/bottom performers, or department-level patterns visible in the data.
+- "anomalies": Call out outliers, null values, zero-values, or records that deviate significantly from the group.
+- "trends": Identify patterns such as salary bands, hire date clustering, or department distribution.
 
 STRICT OUTPUT RULES:
-- Return ONLY a single valid JSON object.
-- NO markdown code fences (e.g., do not use ```json).
-- NO preamble or conversational text.
+- Return ONLY a single valid JSON object. No markdown fences, no preamble, no trailing text.
 - If a section has no findings, return an empty array [].
-- All numeric claims must be derived directly from the DATA provided.
+- "summary" must be a string. "insights", "anomalies", "trends" must be arrays of strings.
 
-JSON STRUCTURE:
 {{
   "summary": "string",
   "insights": ["string"],
   "anomalies": ["string"],
   "trends": ["string"]
-}}
-"""
+}}"""
 
     # ------------------------------------------------
     # SHARED: PREPARE DATA FOR LLM
     # ------------------------------------------------
-    def _prepare_data_for_llm(self, results: List[Dict[str, Any]], max_rows: int = 50) -> str:
+    def _prepare_data_for_llm(
+        self, results: List[Dict[str, Any]], max_rows: int = 50
+    ) -> tuple[str, Dict[str, Any]]:
         """
-        Trims results to max_rows and wraps with metadata
-        so the LLM knows if data was truncated.
+        FIX 3: Returns a tuple of (data_json_string, metadata_dict).
+
+        Previously this method wrapped the data inside a metadata dict under a "data" key
+        and serialized everything together. This caused the LLM to receive a structure like:
+            { "total_rows": 10, "rows_analyzed": 10, "truncated": false, "data": [...] }
+        ...which it then complained about as a "truncated data field".
+
+        Now the raw JSON array is returned separately from the metadata, so the prompt
+        can inject them independently without confusing the LLM.
         """
         trimmed = results[:max_rows]
+
+        # Serialize ONLY the actual records as a clean JSON array
+        # default=str safely handles datetime, Decimal, UUID, etc.
+        data_json = json.dumps(trimmed, indent=2, default=str)
         meta = {
             "total_rows": len(results),
             "rows_analyzed": len(trimmed),
             "truncated": len(results) > max_rows,
-            "data": trimmed
         }
-        return json.dumps(meta, indent=2, default=str)
+
+        return data_json, meta
 
     # ------------------------------------------------
     # SHARED: FORMAT SCHEMA
