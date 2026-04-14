@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from app.api import auth, query, history
+from app.core.config import settings
 from app.core.database import app_engine, init_db
 
 app = FastAPI(
@@ -29,6 +30,11 @@ app.include_router(history.router)
 @app.on_event("startup")
 async def startup_event():
     await init_db()
+    print(f"[Startup] LLM provider setting: {settings.LLM_PROVIDER}")
+    if settings.LLM_PROVIDER == "llama":
+        print(f"[Startup] Ollama model: {settings.LLAMA_MODEL} @ {settings.LLAMA_BASE_URL}")
+    else:
+        print(f"[Startup] Google model: {settings.GOOGLE_MODEL}")
 
 
 @app.on_event("shutdown")

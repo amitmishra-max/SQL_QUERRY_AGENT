@@ -22,7 +22,7 @@ test.describe("Auth journey (real API)", () => {
     await page.getByRole("button", { name: "Sign in" }).click();
 
     await expect(page).toHaveURL(/\/dashboard$/);
-    await expect(page.getByText("SQL Query Agent")).toBeVisible();
+    await expect(page.getByRole("banner").getByText("SQL Query Agent")).toBeVisible();
 
     await page.getByRole("button", { name: "Sign out" }).click();
     await expect(page).toHaveURL(/\/login$/);

@@ -7,6 +7,8 @@ import SchemaVisualization from "./SchemaVisualization";
 import SchemaStatisticsCharts from "./SchemaStatisticsCharts";
 import { Link, useInRouterContext } from "react-router-dom";
 import { useSchema } from "../context/SchemaContext";
+import AppLogo from "../components/AppLogo";
+import { showAuthSuccessToast } from "../components/AuthToast";
 
 const Icon = {
   Send: () => (
@@ -605,7 +607,11 @@ function Dashboard() {
   };
   const handleLogout = () => {
     localStorage.removeItem("token");
-    toast.success("Logged out successfully");
+    showAuthSuccessToast({
+      title: "Logged out",
+      message: "Your session ended securely.",
+      options: { autoClose: 2200 },
+    });
     setTimeout(() => {
       window.location.href = "/login";
     }, 1000);
@@ -715,19 +721,19 @@ function Dashboard() {
           >
             <div
               style={{
-                width: 28,
-                height: 28,
-                borderRadius: 8,
-                background: "linear-gradient(135deg,#2563eb,#7c3aed)",
+                width: 36,
+                height: 36,
+                borderRadius: 10,
+                background: isDark ? "#0a1020" : "#f8fafc",
+                border: `1px solid ${border}`,
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
                 flexShrink: 0,
+                padding: 4,
               }}
             >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="white">
-                <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
-              </svg>
+              <AppLogo size={28} alt="SQL Query Agent" />
             </div>
             <div>
               <p
@@ -739,7 +745,7 @@ function Dashboard() {
                   whiteSpace: "nowrap",
                 }}
               >
-                SQL Agent
+                SQL Query Agent
               </p>
               <p
                 style={{

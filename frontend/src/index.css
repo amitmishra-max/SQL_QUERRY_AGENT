@@ -2,6 +2,18 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  color-scheme: light;
+  --auth-toast-bg: rgba(255, 255, 255, 0.96);
+  --auth-toast-border: rgba(15, 23, 42, 0.08);
+  --auth-toast-shadow: 0 22px 54px rgba(15, 23, 42, 0.14);
+  --auth-toast-title: #0f172a;
+  --auth-toast-text: #475569;
+  --auth-toast-accent: #16a34a;
+  --auth-toast-accent-soft: rgba(22, 163, 74, 0.12);
+  --auth-toast-progress-bg: linear-gradient(90deg, #16a34a 0%, #4ade80 100%);
+}
+
 body {
   margin: 0;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
@@ -14,4 +26,90 @@ body {
 code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
+}
+
+.Toastify__toast-container {
+  width: min(360px, calc(100vw - 24px));
+  padding: 14px;
+}
+
+.Toastify__toast-container--top-right {
+  top: 20px;
+  right: 6px;
+}
+
+.Toastify__toast.auth-toast-shell {
+  min-height: auto;
+  margin-bottom: 12px;
+  padding: 0;
+  border-radius: 0;
+  border: 1px solid var(--auth-toast-border);
+  background: var(--auth-toast-bg);
+  box-shadow: var(--auth-toast-shadow);
+  backdrop-filter: blur(18px);
+}
+
+.Toastify__toast-body.auth-toast-body {
+  margin: 0;
+  padding: 0;
+}
+
+.auth-toast-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 16px;
+  font-family: Inter, 'Segoe UI', sans-serif;
+}
+
+.auth-toast-icon {
+  display: flex;
+  height: 16px;
+  width: 16px;
+  flex: 0 0 16px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0;
+  color: var(--auth-toast-accent);
+}
+
+.auth-toast-copy {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+}
+
+.auth-toast-title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.25;
+  color: var(--auth-toast-title);
+}
+
+.Toastify__progress-bar.auth-toast-progress {
+  height: 3px;
+  background: var(--auth-toast-progress-bg);
+}
+
+@media (max-width: 640px) {
+  .Toastify__toast-container {
+    left: 12px;
+    right: 12px;
+    width: auto;
+    padding: 0;
+  }
+
+  .Toastify__toast-container--top-right {
+    top: 12px;
+    right: 12px;
+  }
+
+  .Toastify__toast.auth-toast-shell {
+    border-radius: 0;
+  }
+
+  .auth-toast-card {
+    padding: 15px 16px;
+  }
 }

@@ -3,6 +3,8 @@ import { toast } from 'react-toastify'
 import { useNavigate, Link } from 'react-router-dom'
 import { authAPI } from '../services/api'
 import { AuthContext } from '../context/AuthContext'
+import AppLogo from '../components/AppLogo'
+import { showAuthSuccessToast } from '../components/AuthToast'
 
 // Truncate password to 72 bytes (bcrypt limit)
 const truncatePassword = (password) => {
@@ -13,11 +15,6 @@ const truncatePassword = (password) => {
 
 /* â”€â”€ Icons â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 const Icon = {
-  Logo: () => (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="white">
-      <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
-    </svg>
-  ),
   Email: () => (
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/>
@@ -97,7 +94,10 @@ function Login() {
         password: truncatePassword(password),
       })
       login(response.data.access_token)
-      toast.success('Welcome back!')
+      showAuthSuccessToast({
+        title: 'Welcome back!',
+        message: 'You are signed in and ready to continue.',
+      })
       navigate('/dashboard')
     } catch (err) {
       setError(err.response?.data?.detail || 'Login failed')
@@ -157,10 +157,10 @@ function Login() {
 
             {/* Logo */}
             <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 bg-white/20 border border-white/25 rounded-lg flex items-center justify-center">
-                <Icon.Logo />
+              <div className="w-10 h-10 bg-white/12 border border-white/20 rounded-xl flex items-center justify-center p-1">
+                <AppLogo size={30} alt="SQL Query Agent" />
               </div>
-              <span className="text-white font-semibold text-sm tracking-tight">SQL Agent</span>
+              <span className="text-white font-semibold text-sm tracking-tight">SQL Query Agent</span>
             </div>
 
             {/* Headline + features */}
@@ -189,7 +189,7 @@ function Login() {
         {/* Footer */}
             <footer className="border-t border-white/10 bg-white/5 backdrop-blur-sm -mx-10 -mb-10 px-10 py-4 rounded-b-none">
               <div className="flex items-center justify-between text-[11px] text-white/50">
-                <p>Â© {new Date().getFullYear()} SQL Agent. All rights reserved.</p>
+                <p>Â© {new Date().getFullYear()} SQL Query Agent. All rights reserved.</p>
                 <div className="flex items-center gap-4">
                   <a href="#" className="hover:text-white/90 transition-colors">Privacy</a>
                   <a href="#" className="hover:text-white/90 transition-colors">Terms</a>
@@ -220,10 +220,10 @@ function Login() {
                 {/* Mobile logo + heading */}
                 <div className="mb-5">
                   <div className="flex items-center gap-2 mb-4 lg:hidden">
-                    <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-blue-500 to-violet-600 flex items-center justify-center">
-                      <Icon.Logo />
+                    <div className="w-9 h-9 rounded-xl bg-white/5 border border-slate-700 flex items-center justify-center p-1">
+                      <AppLogo size={28} alt="SQL Query Agent" />
                     </div>
-                    <span className="text-white font-semibold text-sm">SQL Agent</span>
+                    <span className="text-white font-semibold text-sm">SQL Query Agent</span>
                   </div>
                   <h2 className="text-xl font-bold text-white tracking-tight">Welcome back</h2>
                   <p className="text-slate-400 text-xs mt-1 font-medium">Sign in to your account to continue</p>

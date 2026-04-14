@@ -19,6 +19,12 @@ class LLMService:
         self.base_url = settings.LLAMA_BASE_URL
         self.model = settings.LLAMA_MODEL
         self.verify_ssl = settings.LLAMA_VERIFY_SSL
+        self.google_model = settings.GOOGLE_MODEL
+        self.google_fallback_models = [
+            model.strip()
+            for model in settings.GOOGLE_FALLBACK_MODELS.split(",")
+            if model.strip()
+        ]
         
         # Initialize Google client only if API key is valid
         self.google_client = None
@@ -73,7 +79,7 @@ class LLMService:
         prompt = self._build_prompt(question, schema_text)
 
         primary_error = None
-        fallback_error = None
+        fallback_errors: List[str] = []
 
         # --- PRIMARY: Ollama/Llama ---
         if self.provider == "llama" and self.base_url:
@@ -82,6 +88,8 @@ class LLMService:
                 parsed = self._parse_json_response(raw)
                 result = self._extract_sql_result(parsed)
                 if result.get("sql"):
+                    result["provider"] = f"ollama ({self.model})"
+                    print(f"[LLMService] Response from Ollama ({self.model})")
                     return result
             except Exception as e:
                 primary_error = str(e)
@@ -89,22 +97,27 @@ class LLMService:
 
         # --- FALLBACK: Google GenAI ---
         if self.google_client:
-            try:
-                raw = await self._call_google_llm(prompt)
-                parsed = self._parse_json_response(raw)
-                result = self._extract_sql_result(parsed)
-                if result.get("sql"):
-                    return result
-            except Exception as e:
-                fallback_error = str(e)
-                print(f"[LLMService] Google fallback failed: {e}")
+            for google_model in self._get_google_models_to_try():
+                try:
+                    raw = await self._call_google_llm(prompt, google_model)
+                    parsed = self._parse_json_response(raw)
+                    result = self._extract_sql_result(parsed)
+                    if result.get("sql"):
+                        result["provider"] = google_model
+                        print(f"[LLMService] Response from Google Gemini fallback ({google_model})")
+                        return result
+                    fallback_errors.append(f"{google_model}: empty SQL result")
+                except Exception as e:
+                    fallback_errors.append(f"{google_model}: {str(e)}")
+                    print(f"[LLMService] Google fallback failed for {google_model}: {e}")
 
         # --- BOTH FAILED ---
         error_msg = "LLM service unavailable. "
         if primary_error:
             error_msg += f"Primary: {primary_error[:100]}. "
-        if fallback_error:
-            error_msg += f"Fallback: {fallback_error[:100]}."
+        if fallback_errors:
+            joined_errors = " | ".join(fallback_errors)
+            error_msg += f"Fallback: {joined_errors[:250]}."
         
         return {"sql": "", "explanation": "", "error": error_msg}
 
@@ -136,6 +149,7 @@ class LLMService:
             raw = await self._call_llm(prompt)
             parsed = self._safe_parse_json(raw)
             if parsed and REQUIRED_ANALYSIS_KEYS.issubset(parsed.keys()):
+                print(f"[LLMService] Analysis from Ollama ({self.model})")
                 return parsed
             else:
                 print(f"[LLMService] Primary LLM returned incomplete analysis: {raw[:300]}")
@@ -147,6 +161,7 @@ class LLMService:
             raw = await self._call_google_llm(prompt)
             parsed = self._safe_parse_json(raw)
             if parsed and REQUIRED_ANALYSIS_KEYS.issubset(parsed.keys()):
+                print(f"[LLMService] Analysis from Google Gemini ({self.google_model})")
                 return parsed
             else:
                 print(f"[LLMService] Google LLM returned incomplete analysis: {raw[:300]}")
@@ -205,12 +220,18 @@ class LLMService:
     # ------------------------------------------------
     # FALLBACK: GOOGLE GENAI CALL
     # ------------------------------------------------
-    async def _call_google_llm(self, prompt: str) -> str:
+    def _get_google_models_to_try(self) -> List[str]:
+        models = [self.google_model, *self.google_fallback_models]
+        # Preserve order but avoid duplicate retries if env values overlap.
+        return list(dict.fromkeys(models))
+
+    async def _call_google_llm(self, prompt: str, model: Optional[str] = None) -> str:
         if self.google_client is None:
             raise Exception("Google GenAI fallback is not configured")
 
+        selected_model = model or self.google_model
         response = self.google_client.models.generate_content(
-            model="gemini-2.5-flash",
+            model=selected_model,
             contents=prompt,
             config=GenerateContentConfig(
                 temperature=0,

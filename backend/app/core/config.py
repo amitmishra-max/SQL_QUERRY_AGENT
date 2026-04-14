@@ -23,11 +23,17 @@ class Settings(BaseSettings):
     LLAMA_BASE_URL: str = os.getenv("LLAMA_BASE_URL", "http://localhost:11434/api")
     LLAMA_MODEL: str = os.getenv("LLAMA_MODEL", "deepseek-coder:6.7b")
     LLAMA_VERIFY_SSL: bool = os.getenv("LLAMA_VERIFY_SSL", "false").lower() in ("true", "1", "yes")
-    
-    # germini Settings (alternative)
-    GEMINI_API_KEY: str=str(os.getenv("GEMINI_API_KEY"))
-    OPENAI_API_KEY: Optional[str] = None
-    OPENAI_MODEL: str = "gpt-3.5-turbo"
+
+    # Google/Gemini settings. Keep legacy env aliases so existing .env files continue to work.
+    GOOGLE_API_KEY: str = os.getenv("GOOGLE_API_KEY") or os.getenv("GEMINI_API_KEY", "")
+    GOOGLE_MODEL: str = os.getenv("GOOGLE_MODEL", "gemini-2.5-flash")
+    GOOGLE_FALLBACK_MODELS: str = os.getenv(
+        "GOOGLE_FALLBACK_MODELS",
+        "gemini-2.5-flash-lite,gemini-3-flash-preview,gemini-3.1-flash-lite-preview",
+    )
+    GEMINI_API_KEY: str = GOOGLE_API_KEY
+    OPENAI_API_KEY: Optional[str] = os.getenv("OPENAI_API_KEY")
+    OPENAI_MODEL: str = os.getenv("OPENAI_MODEL", "gpt-3.5-turbo")
     
     # Query Settings
     MAX_QUERY_ROWS: int = int(os.getenv("MAX_QUERY_ROWS", "100"))

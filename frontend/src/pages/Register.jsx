@@ -1,6 +1,7 @@
 ﻿import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { authAPI } from '../services/api'
+import AppLogo from '../components/AppLogo'
 
 function Register() {
   const navigate = useNavigate()
@@ -126,10 +127,8 @@ function Register() {
 
               {/* Logo + Heading */}
               <div className="flex flex-col items-center mb-5">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-violet-600 flex items-center justify-center mb-3 shadow-lg shadow-blue-900/40">
-                  <svg width="19" height="19" viewBox="0 0 24 24" fill="white">
-                    <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
-                  </svg>
+                <div className="w-14 h-14 rounded-2xl bg-white/5 border border-slate-700 flex items-center justify-center mb-3 shadow-lg shadow-black/30 p-1.5">
+                  <AppLogo size={42} alt="SQL Query Agent" />
                 </div>
                 <h1 className="text-xl font-bold text-white tracking-tight">Create account</h1>
                 <p className="text-slate-400 text-xs mt-1 font-medium">Join SQL Query Agent today</p>
