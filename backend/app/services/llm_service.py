@@ -338,46 +338,47 @@ Respond ONLY with a valid JSON object. No markdown, no extra text:
     # SHARED: BUILD ANALYSIS PROMPT
     # ------------------------------------------------
     def _build_analysis_prompt(self, user_query: str, data_json: str, row_meta: Dict[str, Any]) -> str:
-        # FIX 2: Row context is injected as plain text, NOT wrapped around the data.
-        # This prevents the LLM from seeing a "data" key with a truncated string value.
-        truncation_note = (
-            f"Note: The full result set has {row_meta['total_rows']} rows. "
-            f"You are analyzing the first {row_meta['rows_analyzed']} rows as a representative sample."
-            if row_meta["truncated"]
-            else f"This is the complete dataset with {row_meta['total_rows']} rows."
-        )
+        return f"""You are a Senior Data Analyst. Your job is to analyze the dataset below and answer the user's question with precise, evidence-based findings.
 
-        return f"""SYSTEM: You are a meticulous Senior Data Analyst. Provide a factual, evidence-based analysis using ONLY the data provided below.
+USER QUESTION:
+{user_query}
 
-USER QUESTION: {user_query}
-
-{truncation_note}
-
-DATASET (JSON array of records):
+DATASET ({row_meta['total_rows']} rows):
 {data_json}
 
-INSTRUCTIONS:
-- Analyze ALL records in the dataset above. Do not skip any rows.
-- Every numeric claim (counts, sums, averages, min/max) must be derived directly from the data rows above.
-- If the user asks about salaries, scan every record's "salary" field explicitly.
-- Do not mention truncation, missing data, or data quality issues unless a field is literally null or zero in the rows provided.
+ANALYSIS REQUIREMENTS:
 
-ANALYSIS DEPTH:
-- "summary": Directly answer the user's question with specific metrics (exact counts, sums, or averages from the data).
-- "insights": Identify correlations, top/bottom performers, or department-level patterns visible in the data.
-- "anomalies": Call out outliers, null values, zero-values, or records that deviate significantly from the group.
-- "trends": Identify patterns such as salary bands, hire date clustering, or department distribution.
+1. SUMMARY
+   - Directly and concisely answer the user's question
+   - Include exact numbers, counts, totals, or averages computed from the data
+   - Do not use vague language like "some" or "many" — use actual values
 
-STRICT OUTPUT RULES:
-- Return ONLY a single valid JSON object. No markdown fences, no preamble, no trailing text.
-- If a section has no findings, return an empty array [].
-- "summary" must be a string. "insights", "anomalies", "trends" must be arrays of strings.
+2. INSIGHTS
+   - Identify meaningful patterns, comparisons, or rankings visible in the data
+   - Highlight top and bottom performers where relevant
+   - Compare groups (e.g. departments, categories) against each other
+   - Each insight must reference specific values from the data
+
+3. ANOMALIES
+   - Flag records with null, zero, or unexpected values
+   - Identify outliers that deviate significantly from the group average or median
+   - Note any data inconsistencies or suspicious values
+   - Return [] if everything looks normal
+
+4. TRENDS
+   - Identify distribution patterns, clusters, or groupings in the data
+   - Note any ordering or progression visible across records
+   - Return [] if no trends are detectable
+
+OUTPUT FORMAT:
+Return ONLY a valid JSON object with no markdown, no code fences, no explanation outside the JSON.
+All fields are required. Arrays must contain at least one string if findings exist.
 
 {{
-  "summary": "string",
-  "insights": ["string"],
-  "anomalies": ["string"],
-  "trends": ["string"]
+  "summary": "Direct answer to the user question with specific metrics",
+  "insights": ["Insight with specific data reference", "..."],
+  "anomalies": ["Anomaly description with affected record details", "..."],
+  "trends": ["Trend description with supporting evidence", "..."]
 }}"""
 
     # ------------------------------------------------
@@ -423,6 +424,114 @@ STRICT OUTPUT RULES:
                 nullable = "NULL" if col.get("is_nullable") == "YES" else "NOT NULL"
                 lines.append(f"  - {col.get('column_name')}: {col.get('data_type')} ({nullable})")
         return "\n".join(lines)
+        
+    def _build_chart_prompt(self, user_query: str, data_json: str) -> str:
+        return f"""You are a data visualization expert. Respond ONLY with valid JSON, no markdown, no preamble.
 
+User Question: {user_query}
+
+DATA:
+{data_json}
+
+Analyze the data and return ONLY this JSON structure:
+{{
+  "chart_type": "bar",
+  "title": "Chart title",
+  "labels": ["label1", "label2"],
+  "datasets": [
+    {{
+      "label": "Dataset label",
+      "data": [10, 20, 30]
+    }}
+  ]
+}}
+
+Rules:
+- "labels" must contain the categorical values (e.g. department names)
+- "datasets[0].data" must contain the corresponding numeric values (e.g. counts or sums)
+- labels and data arrays MUST be the same length
+- NEVER return an empty datasets array — always extract at least one numeric column
+- Use "bar" for comparisons, "line" for trends over time, "pie"/"doughnut" for proportions
+- dataset label should describe the metric (e.g. "Employee Count", "Total Salary")
+"""
+
+    def _build_report_prompt(self, user_query: str, data_json: str) -> str:
+        return f"""You are a senior data analyst writing a formal report. Respond ONLY with valid JSON, no markdown fences.
+
+    User Question: {user_query}
+
+    DATA:
+    {data_json}
+
+    Return ONLY this JSON:
+    {{
+      "title": "Report title",
+      "executive_summary": "2-3 sentence high-level summary",
+      "sections": [
+        {{
+          "heading": "Section heading",
+          "content": "Detailed paragraph for this section"
+        }}
+      ],
+      "key_findings": ["Finding 1", "Finding 2"],
+      "conclusion": "Concluding paragraph"
+    }}
+
+    Rules:
+    - Write in professional, formal language
+    - Each section content should be at least 2 sentences
+    - key_findings should be 3-5 bullet points
+    - Do not hallucinate data not present
+    """
+
+    async def generate_chart_config(
+        self,
+        question: str,
+        results: List[Dict[str, Any]]
+    ) -> Dict[str, Any]:
+        if not results:
+            return {"chart_type": "bar", "title": "", "labels": [], "datasets": []}
+
+        data_json, _ = self._prepare_data_for_llm(results)  # ✅ unpack tuple
+        prompt = self._build_chart_prompt(question, data_json)
+
+        for caller in [self._call_llm, self._call_groq_llm]:  # ✅ use groq
+            try:
+                raw = await caller(prompt)
+                parsed = self._safe_parse_json(raw)
+                if parsed and "chart_type" in parsed and "labels" in parsed:
+                    return parsed
+            except Exception as e:
+                print(f"[LLMService] Chart generation failed ({caller.__name__}): {e}")
+
+        return {"chart_type": "bar", "title": "", "labels": [], "datasets": [], "error": "LLM failed"}
+
+
+    async def generate_report(
+        self,
+        question: str,
+        results: List[Dict[str, Any]]
+    ) -> Dict[str, Any]:
+        if not results:
+            return {"title": "", "executive_summary": "No data.", "sections": [], "key_findings": [], "conclusion": ""}
+
+        data_json, _ = self._prepare_data_for_llm(results)  
+        prompt = self._build_report_prompt(question, data_json)
+
+        for caller in [self._call_llm, self._call_groq_llm]:  # ✅ use groq
+            try:
+                raw = await caller(prompt)
+                parsed = self._safe_parse_json(raw)
+                print(f"[LLMService] Raw report response from {caller.__name__}: {raw[:300]}")  # Log raw response for debugging
+                if parsed and "executive_summary" in parsed:
+                    return parsed
+                else:
+                    print(f"[LLMService] Report incomplete from ({caller.__name__}): {raw[:300]}")
+            except Exception as e:
+                print(f"[LLMService] Report generation failed ({caller.__name__}): {e}")
+                
+       
+
+        return {"title": "", "executive_summary": "", "sections": [], "key_findings": [], "conclusion": "", "error": "LLM failed"}
 
 llm_service = LLMService()

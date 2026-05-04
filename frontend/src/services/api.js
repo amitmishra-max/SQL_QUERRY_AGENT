@@ -32,6 +32,8 @@ export const queryAPI = {
   askQuestion: (question, connection_string = null) => api.post('/api/query/ask', { question, connection_string }),
   getStatistics: (connection_string = null, forceRefresh = false) => 
     api.post('/api/query/statistics', { connection_string }, { params: { force_refresh: forceRefresh } }),
+  getReport: (question, results) => api.post('/api/query/report', { question, results }),
+  getChart: (question, results) => api.post('/api/query/chart', { question, results }),
   invalidateStatisticsCache: (connection_string = null) => 
     api.post('/api/query/statistics/invalidate', { connection_string })
 }

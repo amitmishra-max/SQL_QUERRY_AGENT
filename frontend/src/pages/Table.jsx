@@ -86,20 +86,47 @@
 
   const getValueClass = (value) => {
     if (value === null || value === undefined) return theme.valNull;
-    if (typeof value === "boolean") return value ? theme.valBoolT : theme.valBoolF;
+    if (typeof value === "boolean")
+      return value ? theme.valBoolT : theme.valBoolF;
     if (typeof value === "number") return theme.valNumber;
     if (typeof value === "object") return theme.valObject;
-    if (typeof value === "string" && /^\d{4}-\d{2}-\d{2}/.test(value)) return theme.valDate;
+    if (typeof value === "string" && /^\d{4}-\d{2}-\d{2}/.test(value))
+      return theme.valDate;
     return theme.valString;
   };
-
+  const exportToSheets = () => {
+  window.parent.postMessage(
+    {
+      type: "EXPORT_TO_SHEETS",
+      payload: rows,
+    },
+    "*"
+  );
+};
   return (
     <>
       {rows.length > 0 ? (
         <div className={`rounded-xl overflow-hidden ${theme.wrapper}`}>
-          <div className={`flex items-center justify-between px-4 py-3 ${theme.topBar}`}>
+          <div
+            className={`flex items-center justify-between px-4 py-3 ${theme.topBar}`}
+          >
+            <button
+              onClick={exportToSheets}
+              className="px-3 py-1.5 text-xs rounded-lg bg-green-600 text-white hover:bg-green-700"
+            >
+              Export to Sheets
+            </button>
             <div className="flex items-center gap-2">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={theme.iconStroke} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <svg
+                width="13"
+                height="13"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke={theme.iconStroke}
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
                 <rect x="3" y="3" width="18" height="18" rx="2" />
                 <path d="M3 9h18M3 15h18M9 3v18" />
               </svg>
@@ -107,9 +134,7 @@
                 {`Results (${rows.length} ${rows.length === 1 ? "row" : "rows"})`}
               </span>
             </div>
-            <span className={`text-[11px] font-medium px-2.5 py-0.5 rounded-full ${theme.badge}`}>
-              {rows.length} {rows.length === 1 ? "row" : "rows"}
-            </span>
+          
           </div>
 
           <div className="overflow-x-auto">
@@ -151,14 +176,27 @@
           </div>
 
           {rows.length > 10 && (
-            <div className={`px-4 py-2.5 text-[11px] text-right ${theme.footer}`}>
+            <div
+              className={`px-4 py-2.5 text-[11px] text-right ${theme.footer}`}
+            >
               Showing all {rows.length} rows
             </div>
           )}
         </div>
       ) : (
-        <div className={`flex items-center gap-2.5 px-4 py-3 rounded-xl text-xs ${theme.empty}`}>
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={theme.emptyIcon} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <div
+          className={`flex items-center gap-2.5 px-4 py-3 rounded-xl text-xs ${theme.empty}`}
+        >
+          <svg
+            width="13"
+            height="13"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke={theme.emptyIcon}
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
             <circle cx="12" cy="12" r="10" />
             <line x1="12" y1="8" x2="12" y2="12" />
             <line x1="12" y1="16" x2="12.01" y2="16" />

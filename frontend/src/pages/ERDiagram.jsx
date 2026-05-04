@@ -67,6 +67,7 @@ export default function ERDiagram() {
 
   return (
      <div className={fullPage ? "er-fullpage" : "er-embedded"}>
+     <button style={{border: `1px solid ${c.border}`,padding: "4px 8px",backgroundColor: c.cardBg,color: c.headerText,borderRadius: "4px"}} onClick={() => window.location.href = "/dashboard"}>← Back</button>
       <div
         id="diagram-container"
         className={fullPage ? "scale-75 origin-top mx-auto pt-4" : "scale-100"}

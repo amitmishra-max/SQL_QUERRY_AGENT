@@ -294,7 +294,7 @@ function Login() {
                       <button
                         type="button"
                         onClick={() => setShowPassword(p => !p)}
-                        className="flex-shrink-0 text-slate-400 hover:text-slate-200 transition-colors"
+                        className="flex-shrink-0 text-slate-400 hover:text-slate-200 transition-colors relative z-10 right-5"
                         tabIndex={-1}
                         aria-label="Toggle password visibility"
                       >

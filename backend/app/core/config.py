@@ -30,13 +30,13 @@ class Settings(BaseSettings):
     
     # Query Settings
     MAX_QUERY_ROWS: int = int(os.getenv("MAX_QUERY_ROWS", "100"))
-    QUERY_TIMEOUT_SECONDS: int = int(os.getenv("QUERY_TIMEOUT_SECONDS", "30"))
+    QUERY_TIMEOUT_SECONDS: int = int(os.getenv("QUERY_TIMEOUT_SECONDS", "120"))
     MAX_QUESTION_LENGTH: int = int(os.getenv("MAX_QUESTION_LENGTH", "5000"))
     
     # LLM Timeout Settings (for faster fallback to Groq when Ollama is slow/unavailable)
-    OLLAMA_TIMEOUT_SECONDS: int = int(os.getenv("OLLAMA_TIMEOUT_SECONDS", "8"))
-    OLLAMA_CONNECT_TIMEOUT_SECONDS: int = int(os.getenv("OLLAMA_CONNECT_TIMEOUT_SECONDS", "3"))
-    LLM_OPERATION_TIMEOUT_SECONDS: int = int(os.getenv("LLM_OPERATION_TIMEOUT_SECONDS", "12"))
+    OLLAMA_TIMEOUT_SECONDS: int = int(os.getenv("OLLAMA_TIMEOUT_SECONDS", "120"))
+    OLLAMA_CONNECT_TIMEOUT_SECONDS: int = int(os.getenv("OLLAMA_CONNECT_TIMEOUT_SECONDS", "120"))
+    LLM_OPERATION_TIMEOUT_SECONDS: int = int(os.getenv("LLM_OPERATION_TIMEOUT_SECONDS", "120"))
     
     @property
     def QUERY_TIMEOUT(self) -> int:

@@ -5,7 +5,8 @@ import json
 from decimal import Decimal
 from datetime import date, datetime
 from typing import Any
-
+from pydantic import BaseModel
+from typing import List, Dict, Optional
 from app.core.database import get_app_db, get_target_db_session
 from app.core.security import get_current_user
 from app.models.user import User
@@ -290,3 +291,64 @@ async def invalidate_statistics_cache(
         raise HTTPException(
             status_code=400, detail=f"Failed to invalidate cache: {str(e)}"
         )
+
+class ChartRequest(BaseModel):
+    question: str
+    results: List[Dict[str, Any]]
+
+class ChartResponse(BaseModel):
+    chart_type: str
+    title: str
+    labels: List[str]
+    datasets: List[Dict[str, Any]]
+    error: Optional[str] = None
+
+@router.post("/chart", response_model=ChartResponse)
+async def generate_chart(
+    request: ChartRequest,
+    current_user: User = Depends(get_current_user),
+    app_db: AsyncSession = Depends(get_app_db)
+):
+    try:
+        
+        response = await llm_service.generate_chart_config(
+            question=request.question or "",
+            results=request.results or []
+        )
+        
+        return ChartResponse(**response)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Failed to generate chart: {str(e)}")
+    
+class ReportSection(BaseModel):
+    heading: str
+    content: str
+
+class ReportRequest(BaseModel):
+    question: str
+    results: List[Dict[str, Any]]
+
+class ReportResponse(BaseModel):
+    title: str
+    executive_summary: str
+    sections: List[ReportSection]
+    key_findings: List[str]
+    conclusion: str
+    error: Optional[str] = None
+
+@router.post("/report", response_model=ReportResponse)
+async def generate_report(
+    request: ReportRequest,
+    current_user: User = Depends(get_current_user),
+    app_db: AsyncSession = Depends(get_app_db)
+):
+    try:
+        
+        response = await llm_service.generate_report(
+            question=request.question or "",
+            results=request.results or []
+        )
+        
+        return ReportResponse(**response)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Failed to generate report: {str(e)}")
